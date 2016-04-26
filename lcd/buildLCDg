@@ -1,0 +1,7 @@
+g++ -c -g -fPIC -std=c++11 -I./bcm2835-1.36/src p_4094driverBCM.cpp -o p_4094driverBCM.o  -I./bcm2835-1.36/src 
+g++ -c -g -fPIC -std=c++11 -I./bcm2835-1.36/src PCD8544.cpp -o PCD8544.o -I./bcm2835-1.36/src 
+g++ -c -g -fPIC -std=c++11 -I./bcm2835-1.36/src bcm2835-1.36/src/bcm2835.c -o bcm2835.o 
+g++ -c -g -fPIC -std=c++11 -I./bcm2835-1.36/src lcdinterface.c -o lcdinterface.o -I./bcm2835-1.36/src 
+g++ -c -g -fPIC -std=c++11 -I./bcm2835-1.36/src lcdtest.c -o lcdtest.o -I./bcm2835-1.36/src 
+g++ -shared -Wl,-soname,PCD8544.so -o PCD8544.so  bcm2835.o p_4094driverBCM.o PCD8544.o lcdinterface.o
+g++ -g -o lcdtest  bcm2835.o p_4094driverBCM.o PCD8544.o lcdtest.o
