@@ -260,7 +260,7 @@ def on_disconnect(client, userdata, rc):
 def on_message(client, userdata, msg):
     topic_parts = msg.topic.split("/")
     logger.info("MQTT RX: "+msg.topic+" "+msg.payload)
-    if int(topic_parts[2])==emonPi_nodeID:
+    if int(topic_parts[2])==emonPi_nodeID and topic_parts[3]=="values":
         basedata = msg.payload.split(",")
         r.set("basedata",msg.payload)
 
@@ -345,18 +345,22 @@ while 1:
         if round(page)==0:  
             basedata = r.get("basedata")
             if basedata is not None:
-                basedata = basedata.split(",")
-                lcd_string1 = str(basedata[0])+":"
-                lcd_string1 = rjustify(lcd_string1,6,";")
-                lcd_string2 = rjustify(str(basedata[4])+"% ",7," ")+rjustify(str(basedata[6])+"A",7," ")
-                lcd_string3 = str(basedata[1])+":"
-                lcd_string3 = rjustify(lcd_string3,6,";")
-                lcd_string4 = rjustify(str(basedata[5])+"% ",7," ")+rjustify(str(basedata[7])+"A",7," ")
+		if len(basedata)>=7:
+                    basedata = basedata.split(",")
+                    lcd_string1 = str(basedata[0])+":"
+                    lcd_string1 = rjustify(lcd_string1,6,";")
+                    lcd_string2 = rjustify(str(basedata[4])+"% ",7," ")+rjustify(str(basedata[6])+"A",7," ")
+                    lcd_string3 = str(basedata[1])+":"
+                    lcd_string3 = rjustify(lcd_string3,6,";")
+                    lcd_string4 = rjustify(str(basedata[5])+"% ",7," ")+rjustify(str(basedata[7])+"A",7," ")
+		else: 
+                    lcd_string2 = "only "+str(len(basedata))
+                    lcd_string4 = "received"
 
             else:
-                lcd_string1 = '...'
+                lcd_string1 = '0'
 		lcd_string2 = 'no data'
-		lcd_string3 = '...'
+		lcd_string3 = '0'
                 lcd_string4 = 'received'
 
 
