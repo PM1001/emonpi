@@ -1,73 +1,75 @@
-void RF_Setup(){
-	//--------------------------------------------------Initalize RF and send out RF test packets--------------------------------------------------------------------------------------------  
+void RF_Setup() {
+  //--------------------------------------------------Initalize RF and send out RF test packets--------------------------------------------------------------------------------------------
+  //NEED TO ADD RF MODULE AUTO DETECTION
   delay(10);
   rf12_initialize(nodeID, RF_freq, networkGroup);                          // initialize RFM12B/rfm69CW
-   for (int i=10; i>=0; i--)                                                                  //Send RF test sequence (for factory testing)
-   {
-     emonPi.power1=i; 
-     rf12_sendNow(0, &emonPi, sizeof emonPi);
-     delay(100);
-   }
+  for (int i = 10; i >= 0; i--)                                                              //Send RF test sequence (for factory testing)
+  {
+    emonPi.power1 = i;
+    rf12_sendNow(0, &emonPi, sizeof emonPi);
+    delay(100);
+  }
   rf12_sendWait(2);
-  emonPi.power1=0;
- //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  emonPi.power1 = 0;
+  //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 }
 
-boolean RF_Rx_Handle(){
-  
-	if (rf12_recvDone()) {						//if RF Packet is received 
-	    byte n = rf12_len;
-	    if (rf12_crc == 0)							//Check packet is good
-	    {
-	    	Serial.print(F("OK"));
-	    	Serial.print(F(" "));							//Print RF packet to serial in struct format
-	    	Serial.print(rf12_hdr & 0x1F);				// Extract and print node ID
-	    	Serial.print(F(" "));
-	    	for (byte i = 0; i < n; ++i) {
-	      		Serial.print((word)rf12_data[i]);
-	      		Serial.print(F(" "));
-	    	}
+boolean RF_Rx_Handle() {
 
-	      	#if RF69_COMPAT
-		    // display RSSI value after packet data e.g (-xx)
-		    Serial.print(F("("));
-		    Serial.print(-(RF69::rssi>>1));
-		    Serial.print(F(")"));
-			#endif
-		    	Serial.println();
+  if (rf12_recvDone()) {						//if RF Packet is received
+    byte n = rf12_len;
+    if (rf12_crc == 0)							//Check packet is good
+    {
+      Serial.print("OK");
+      Serial.print(" ");							//Print RF packet to serial in struct format
+      Serial.print(rf12_hdr & 0x1F);				// Extract and print node ID
+      Serial.print(" ");
+      for (byte i = 0; i < n; ++i) {
+        Serial.print((word)rf12_data[i]);
+        Serial.print(' ');
+      }
 
-	        if (RF12_WANTS_ACK==1) {
-	           // Serial.print(F(" -> ack"));
-	           rf12_sendStart(RF12_ACK_REPLY, 0, 0);
-	       }
+#if RF69_COMPAT
+      // display RSSI value after packet data e.g (-xx)
+      Serial.print("(");
+      Serial.print(-(RF69::rssi >> 1));
+      Serial.print(")");
+#endif
+      Serial.println();
 
-	    return(1);
-	    }
-	    else
-			return(0);
-	       
-	} //end recDone
-	
+      if (RF12_WANTS_ACK == 1) {
+        Serial.print(" -> ack");
+        rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+      }
+
+      return (1);
+    }
+    else
+      return (0);
+
+  } //end recDone
+
 }
 
-void send_RF(){
+void send_RF() {
 
-	if (cmd && rf12_canSend() ) {                                                //if command 'cmd' is waiting to be sent then let's send it
-	    digitalWrite(LEDpin, HIGH); delay(200); digitalWrite(LEDpin, LOW);
-	    showString(PSTR(" -> "));
-	    Serial.print((word) sendLen);
-	    showString(PSTR(" b\n"));
-	    byte header = cmd == 'a' ? RF12_HDR_ACK : 0;
-	    if (dest)
-	      header |= RF12_HDR_DST | dest;
-	    rf12_sendStart(header, stack, sendLen);
-	    cmd = 0;
-	    
-	}
+  if (cmd && rf12_canSend() ) {                                                //if command 'cmd' is waiting to be sent then let's send it
+    digitalWrite(LEDpin, HIGH); delay(200); digitalWrite(LEDpin, LOW);
+    showString(PSTR(" -> "));
+    Serial.print((word) sendLen);
+    showString(PSTR(" b\n"));
+    byte header = cmd == 'a' ? RF12_HDR_ACK : 0;
+    if (dest)
+      header |= RF12_HDR_DST | dest;
+    rf12_sendStart(header, stack, sendLen);
+    cmd = 0;
+
+  }
 }
 
 
 static void handleInput (char c) {
+
   if ('0' <= c && c <= '9') {
     value = 10 * value + c - '0';
     return;
@@ -85,72 +87,88 @@ static void handleInput (char c) {
     switch (c) {
 
       case 'i': //set node ID
-        if (value){
+        if (value) {
           nodeID = value;
-          if (RF_STATUS==1) rf12_initialize(nodeID, RF_freq, networkGroup);
-        break;
-      }
+          if (RF_STATUS == 1) rf12_initialize(nodeID, RF_freq, networkGroup);
+          break;
+        }
 
       case 'b': // set band: 4 = 433, 8 = 868, 9 = 915
         value = bandToFreq(value);
-        if (value){
+        if (value) {
           RF_freq = value;
-          if (RF_STATUS==1) rf12_initialize(nodeID, RF_freq, networkGroup);
+          if (RF_STATUS == 1) rf12_initialize(nodeID, RF_freq, networkGroup);
         }
         break;
-    
+
       case 'g': // set network group
-        if (value>=0){
+        if (value) {
           networkGroup = value;
-          if (RF_STATUS==1) rf12_initialize(nodeID, RF_freq, networkGroup);
+          if (RF_STATUS == 1) rf12_initialize(nodeID, RF_freq, networkGroup);
         }
         break;
 
       case 'p': // set Vcc Cal 1=UK/EU 2=USA
-        if (value){
-          if (value==1) USA=false;
-          if (value==2) USA=true;
+        if (value) {
+          if (value == 1) USA = false;
+          if (value == 2){
+            USA = true;
+          }
+          else {
+            Vcal_EU = float(value) / 100.0;
+            Vcal = Vcal_EU;
+            USA = false;
+              if (ACAC)                                                           //If AC wavefrom has been detected 
+              {
+                ct1.voltage(0, Vcal, phase_shift);                       // ADC pin, Calibration, phase_shift
+                ct2.voltage(0, Vcal, phase_shift);                       // ADC pin, Calibration, phase_shift
+                ct3.voltage(0, Vcal, phase_shift);                       // ADC pin, Calibration, phase_shift
+                ct4.voltage(0, Vcal, phase_shift);                       // ADC pin, Calibration, phase_shift
+              }
+              
+              Serial.print("Calibration: ");Serial.print(Vcal);
+          }
         }
-        break;
+          break;
 
-      case 'v': // print firmware version
-        Serial.print(F("[emonPi.")); Serial.print(firmware_version*0.1); Serial.print(F("]"));
-        break;
+        case 'v': // print firmware version
+          Serial.print("[emonPi."); Serial.print(firmware_version * 0.1); Serial.println("]");
+          break;
 
-      case 'a': // send packet to node ID N, request an ack
-      case 's': // send packet to node ID N, no ack
-        cmd = c;
-        sendLen = top;
-        dest = value;
-        break;
+        case 'a': // send packet to node ID N, request an ack
+        case 's': // send packet to node ID N, no ack
+          cmd = c;
+          sendLen = top;
+          dest = value;
+          break;
 
         default:
           showString(helpText1);
-      } //end case 
-    //Print Current RF config  
+        } //end case
+        //Print Current RF config
 
-    if (RF_STATUS==1) {
-      Serial.print(F(" "));
--     Serial.print((char) ('@' + (nodeID & RF12_HDR_MASK)));
--     Serial.print(F(" i"));
-      Serial.print(nodeID & RF12_HDR_MASK);   
-      Serial.print(F(" g"));
-      Serial.print(networkGroup);
-      Serial.print(F(" @ "));
-      Serial.print(RF_freq == RF12_433MHZ ? 433 :
-                   RF_freq == RF12_868MHZ ? 868 :
-                   RF_freq == RF12_915MHZ ? 915 : 0);
-      Serial.print(F(" MHz")); 
+        if (RF_STATUS == 1) {
+          Serial.print(' ');
+          -     Serial.print((char) ('@' + (nodeID & RF12_HDR_MASK)));
+          -     Serial.print(" i");
+          Serial.print(nodeID & RF12_HDR_MASK);
+          Serial.print(" g");
+          Serial.print(networkGroup);
+          Serial.print(" @ ");
+          Serial.print(RF_freq == RF12_433MHZ ? 433 :
+                       RF_freq == RF12_868MHZ ? 868 :
+                       RF_freq == RF12_915MHZ ? 915 : 0);
+          Serial.print(" MHz");
+        }
+        Serial.print(" USA "); Serial.print(USA);
+        Serial.println(" ");
+
     }
-    Serial.print(F(" USA ")); Serial.print(USA);
-    Serial.println(F(" "));
-    
-    }
-  value = top = 0;
-}
+    value = top = 0;
+  }
 
 
-static byte bandToFreq (byte band) {
-  return band == 4 ? RF12_433MHZ : band == 8 ? RF12_868MHZ : band == 9 ? RF12_915MHZ : 0;
-}
- 
+  static byte bandToFreq (byte band) {
+    return band == 4 ? RF12_433MHZ : band == 8 ? RF12_868MHZ : band == 9 ? RF12_915MHZ : 0;
+  }
+
