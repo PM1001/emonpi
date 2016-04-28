@@ -177,8 +177,8 @@ void setup()
    
   ct1.current(1, Ical1);                                     // CT ADC channel 1, calibration.  calibration (2000 turns / 22 Ohm burden resistor = 90.909)
   ct2.current(2, Ical2);                                     // CT ADC channel 2, calibration.
-  ct3.current(3, Ical1);                                     // CT ADC channel 1, calibration.  calibration (2000 turns / 22 Ohm burden resistor = 90.909)
-  ct4.current(4, Ical2);                                     // CT ADC channel 2, calibration.
+  ct3.current(4, Ical1);                                     // CT ADC channel 3, calibration.  calibration (2000 turns / 22 Ohm burden resistor = 90.909)
+  ct4.current(5, Ical2);                                     // CT ADC channel 4, calibration.
 
   if (ACAC)                                                           //If AC wavefrom has been detected 
   {
